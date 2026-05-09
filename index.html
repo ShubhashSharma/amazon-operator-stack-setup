@@ -604,6 +604,84 @@
       gap: 10px;
     }
 
+    /* Autosave badge */
+    .save-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      background: var(--line-soft);
+      color: var(--ink-3);
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 999px;
+      transition: background 200ms ease, color 200ms ease, transform 220ms ease;
+      white-space: nowrap;
+    }
+    .save-badge::before {
+      content: '✓';
+      font-size: 0.7em;
+      line-height: 1;
+    }
+    .save-badge.pulse {
+      background: var(--teal-soft);
+      color: var(--teal-dark);
+      transform: scale(1.05);
+    }
+
+    /* Backup row */
+    .backup-row {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 12px;
+      font-size: 0.75rem;
+      color: var(--ink-4);
+    }
+    .backup-row a {
+      color: var(--ink-4);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .backup-row a:hover { color: var(--ink-2); }
+
+    /* OS-tab block for the install command */
+    .os-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+    .os-tab {
+      padding: 8px 16px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--ink-3);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+    .os-tab:hover { color: var(--ink-1); border-color: var(--ink-4); }
+    .os-tab.active {
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+      border-color: var(--teal);
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: transparent;
+      color: var(--ink-3);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+    .copy-btn:hover { color: var(--ink-1); border-color: var(--ink-4); }
+    .copy-btn.copied { color: var(--good); border-color: var(--good); background: #ecfdf5; }
+
     /* Privacy badge */
     .privacy {
       display: inline-flex;
@@ -629,6 +707,7 @@
   <div class="page">
     <header class="top">
       <div class="brand">amazon-operator-stack</div>
+      <div id="save-badge" class="save-badge" title="Your progress is saved on this device automatically.">Saved</div>
       <div class="by">Built for <a href="https://sellersessions.com" target="_blank" rel="noopener">Seller Sessions Live 2026</a> by <a href="https://github.com/ShubhashSharma/amazon-operator-stack" target="_blank" rel="noopener">not a square</a></div>
     </header>
 
@@ -643,6 +722,12 @@
 
     <div class="restart-row">
       Want a clean slate? <a href="#" id="restart-link">Reset and start over</a>.
+    </div>
+    <div class="backup-row">
+      <a href="#" id="backup-save-link" title="Download a JSON backup of your in-progress answers. Treat as sensitive — contains your refresh token if you've reached step 5.">Save backup</a>
+      <span>·</span>
+      <a href="#" id="backup-restore-link" title="Restore from a previously-downloaded backup file.">Restore from backup</a>
+      <input type="file" id="backup-restore-input" accept="application/json" style="display:none">
     </div>
 
     <footer class="bot">
@@ -723,8 +808,41 @@
         return JSON.parse(raw);
       } catch { return null; }
     }
-    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    let lastSavedAt = null;
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        lastSavedAt = Date.now();
+        pulseSaveBadge();
+      } catch (err) {
+        // localStorage might be full / disabled (incognito + restrictive policies)
+        const badge = document.getElementById('save-badge');
+        if (badge) {
+          badge.textContent = 'Save failed';
+          badge.style.background = '#fef2f2';
+          badge.style.color = '#dc2626';
+        }
+      }
+    }
     function resetState() { localStorage.removeItem(STORAGE_KEY); location.reload(); }
+    function pulseSaveBadge() {
+      const badge = document.getElementById('save-badge');
+      if (!badge) return;
+      badge.classList.add('pulse');
+      badge.textContent = 'Saved';
+      setTimeout(() => badge.classList.remove('pulse'), 320);
+    }
+    function refreshSaveBadgeTime() {
+      const badge = document.getElementById('save-badge');
+      if (!badge || !lastSavedAt || badge.classList.contains('pulse')) return;
+      const sec = Math.floor((Date.now() - lastSavedAt) / 1000);
+      let label = 'Saved';
+      if (sec >= 60 * 60) label = `Saved ${Math.floor(sec / 3600)}h ago`;
+      else if (sec >= 60) label = `Saved ${Math.floor(sec / 60)}m ago`;
+      else if (sec >= 5) label = `Saved ${sec}s ago`;
+      badge.textContent = label;
+    }
+    setInterval(refreshSaveBadgeTime, 5000);
 
     let state = loadState() || {
       step: 1,
@@ -841,7 +959,7 @@
       card.appendChild(el('div', { class: 'privacy' }, 'No backend. Your refresh token never leaves this browser.'));
       card.appendChild(el('h1', {}, 'Connect your Amazon seller account to Claude Code.'));
       card.appendChild(el('p', { class: 'lede' },
-        'This guide takes about 25 minutes alongside the live walk-through. At the end you download a .env file you drop into the cloned repo. Your credentials never leave your browser.'));
+        "About 25 minutes, in your own time. Your progress is saved automatically — close the tab and come back any time on this device. At the end you download a .env file and run a single copy-paste command to wire it all up."));
 
       card.appendChild(el('div', { class: 'note' },
         el('h4', {}, 'Before you start'),
@@ -1219,33 +1337,137 @@
     }
 
     // ════════════════════════════════════════════════════════
-    //  STEP 7 — Download
+    //  STEP 7 — Download + one-paste install
     // ════════════════════════════════════════════════════════
+    let chosenOs = localStorage.getItem('aos-os') || (navigator.platform.match(/Win/i) ? 'win' : 'unix');
+
     function renderStep7(card) {
       card.appendChild(el('h1', {}, 'Save credentials and finish.'));
       card.appendChild(el('p', { class: 'lede' },
-        'Download your .env, drop it into the cloned repo, and run the CLI commands below to wire it into Claude Code.'));
+        'Two clicks to finish: download the .env, then paste a single command into your terminal. The command clones the repo (if needed), drops the .env in place, installs everything, runs the smoke-test, and wires it into Claude Code.'));
 
+      // 1 — Download
       card.appendChild(el('div', { class: 'download-card' },
         el('div', { class: 'filename' }, 'amazon-operator-stack.env'),
-        el('button', { class: 'btn primary', onclick: downloadEnv }, 'Download .env'),
+        el('button', { class: 'btn primary', id: 'download-env-btn', onclick: e => {
+          downloadEnv();
+          e.target.textContent = '✓ Downloaded — now run the command below';
+          e.target.disabled = true;
+          setTimeout(() => { e.target.textContent = 'Download .env again'; e.target.disabled = false; }, 4000);
+        } }, 'Download .env'),
       ));
 
-      card.appendChild(el('div', { class: 'next-steps' },
-        el('h4', {}, 'Drop the file in + run these three commands'),
-        el('pre', { html: nextStepsCmd() }),
-      ));
+      // 2 — OS tabs + one-paste command
+      const tabsRow = el('div', { class: 'os-tabs' },
+        osTab('unix', 'macOS / Linux'),
+        osTab('win',  'Windows (PowerShell)'),
+      );
 
+      const headerRow = el('div', {
+        style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;',
+      },
+        el('h4', { style: 'font-size:0.8125rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-3); margin:0;' }, 'Paste this in your terminal'),
+        el('button', { class: 'copy-btn', id: 'copy-cmd-btn', onclick: copyMegaCommand }, 'Copy'),
+      );
+
+      const cmdBlock = el('div', { class: 'next-steps' },
+        headerRow,
+        tabsRow,
+        el('pre', { id: 'mega-cmd-pre', html: megaCommand(chosenOs) }),
+        el('div', {
+          style: 'margin-top:12px; font-size:0.8125rem; color:var(--ink-3);',
+          html: 'The command assumes you have <code>git</code>, <code>node</code> 20+, and the <code>amazon-operator-stack.env</code> file in your default Downloads folder. If your clone path or download path differs, edit the first two lines.',
+        }),
+      );
+      card.appendChild(cmdBlock);
+
+      // 3 — Sample queries
       card.appendChild(el('div', { class: 'next-steps' },
-        el('h4', {}, 'Try one of these in Claude Code'),
+        el('h4', {}, 'After Claude Code restarts, try one of these'),
         el('pre', { html: sampleQueries() }),
       ));
 
       card.appendChild(actionsBar({
         backLabel: 'Edit my answers',
         nextLabel: 'All done',
-        onNext: () => alert('All set. Welcome to the Operator Stack.'),
+        onNext: () => alert("All set. Welcome to the Operator Stack."),
       }));
+    }
+
+    function osTab(value, label) {
+      const isActive = chosenOs === value;
+      return el('button', { class: 'os-tab' + (isActive ? ' active' : ''), onclick: () => {
+        chosenOs = value;
+        localStorage.setItem('aos-os', value);
+        const pre = document.getElementById('mega-cmd-pre');
+        if (pre) pre.innerHTML = megaCommand(chosenOs);
+        // Re-render tab states
+        document.querySelectorAll('.os-tab').forEach(t => t.classList.toggle('active',
+          t.textContent.startsWith(chosenOs === 'win' ? 'Windows' : 'macOS')));
+      } }, label);
+    }
+
+    function copyMegaCommand() {
+      const text = megaCommandPlain(chosenOs);
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-cmd-btn');
+        if (!btn) return;
+        btn.textContent = '✓ Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    function megaCommand(os) {
+      if (os === 'win') {
+        return [
+          '<span class="comment"># 1. Clone the repo (skip if you already cloned it)</span>',
+          '<span class="accent">git clone</span> https://github.com/ShubhashSharma/amazon-operator-stack.git $HOME\\code\\amazon-operator-stack',
+          '',
+          '<span class="comment"># 2. Drop the downloaded .env into the repo</span>',
+          '<span class="accent">Move-Item</span> $HOME\\Downloads\\amazon-operator-stack.env $HOME\\code\\amazon-operator-stack\\.env',
+          '',
+          '<span class="comment"># 3. Install + verify + wire to Claude Code</span>',
+          'cd $HOME\\code\\amazon-operator-stack',
+          '<span class="accent">npm install</span>; <span class="accent">npm run smoke-test</span>; <span class="accent">npm run wire-claude</span>',
+        ].join('\n');
+      }
+      return [
+        '<span class="comment"># 1. Clone the repo (skip if you already cloned it)</span>',
+        '<span class="accent">git clone</span> https://github.com/ShubhashSharma/amazon-operator-stack.git ~/code/amazon-operator-stack',
+        '',
+        '<span class="comment"># 2. Drop the downloaded .env into the repo</span>',
+        '<span class="accent">mv</span> ~/Downloads/amazon-operator-stack.env ~/code/amazon-operator-stack/.env',
+        '',
+        '<span class="comment"># 3. Install + verify + wire to Claude Code</span>',
+        'cd ~/code/amazon-operator-stack &amp;&amp; <span class="accent">npm install</span> &amp;&amp; <span class="accent">npm run smoke-test</span> &amp;&amp; <span class="accent">npm run wire-claude</span>',
+      ].join('\n');
+    }
+
+    function megaCommandPlain(os) {
+      if (os === 'win') {
+        return [
+          '# 1. Clone the repo (skip if you already cloned it)',
+          'git clone https://github.com/ShubhashSharma/amazon-operator-stack.git $HOME\\code\\amazon-operator-stack',
+          '',
+          '# 2. Drop the downloaded .env into the repo',
+          'Move-Item $HOME\\Downloads\\amazon-operator-stack.env $HOME\\code\\amazon-operator-stack\\.env',
+          '',
+          '# 3. Install + verify + wire to Claude Code',
+          'cd $HOME\\code\\amazon-operator-stack',
+          'npm install; npm run smoke-test; npm run wire-claude',
+        ].join('\n');
+      }
+      return [
+        '# 1. Clone the repo (skip if you already cloned it)',
+        'git clone https://github.com/ShubhashSharma/amazon-operator-stack.git ~/code/amazon-operator-stack',
+        '',
+        '# 2. Drop the downloaded .env into the repo',
+        'mv ~/Downloads/amazon-operator-stack.env ~/code/amazon-operator-stack/.env',
+        '',
+        '# 3. Install + verify + wire to Claude Code',
+        'cd ~/code/amazon-operator-stack && npm install && npm run smoke-test && npm run wire-claude',
+      ].join('\n');
     }
 
     // ════════════════════════════════════════════════════════
@@ -1298,22 +1520,6 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    }
-
-    function nextStepsCmd() {
-      return [
-        '<span class="comment"># 1. Drop the downloaded file into the repo, renaming it to .env</span>',
-        'mv ~/Downloads/amazon-operator-stack.env ~/code/amazon-operator-stack/.env',
-        '',
-        '<span class="comment"># 2. Confirm everything works against your real seller account</span>',
-        'cd ~/code/amazon-operator-stack',
-        '<span class="accent">npm run smoke-test</span>',
-        '',
-        '<span class="comment"># 3. Wire the MCP server into Claude Code</span>',
-        '<span class="accent">npm run wire-claude</span>',
-        '',
-        '<span class="comment"># 4. Restart Claude Code, then start asking questions.</span>',
-      ].join('\n');
     }
 
     function sampleQueries() {
@@ -1374,6 +1580,57 @@
       e.preventDefault();
       if (confirm('Reset all answers and start over?')) resetState();
     });
+
+    // Backup: download current state as JSON
+    document.getElementById('backup-save-link').addEventListener('click', e => {
+      e.preventDefault();
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+      const filename = `aos-progress-${stamp}.json`;
+      const payload = { ...state, _exportedAt: new Date().toISOString(), _schemaVersion: 1 };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = el('a', { href: url, download: filename });
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Restore: read JSON, validate shape, overwrite state
+    const restoreInput = document.getElementById('backup-restore-input');
+    document.getElementById('backup-restore-link').addEventListener('click', e => {
+      e.preventDefault();
+      restoreInput.click();
+    });
+    restoreInput.addEventListener('change', async () => {
+      const file = restoreInput.files?.[0];
+      if (!file) return;
+      try {
+        const raw = await file.text();
+        const parsed = JSON.parse(raw);
+        // Minimal shape check — keys we depend on
+        const allowedKeys = ['step', 'region', 'primaryMarketplaceId', 'enabledMarketplaceIds',
+                             'appName', 'clientId', 'clientSecret', 'refreshToken'];
+        const restored = {};
+        for (const k of allowedKeys) if (k in parsed) restored[k] = parsed[k];
+        if (Object.keys(restored).length === 0) throw new Error('No valid fields found in backup file');
+        if (!confirm('This will overwrite your current answers. Continue?')) {
+          restoreInput.value = '';
+          return;
+        }
+        state = { ...state, ...restored };
+        saveState();
+        restoreInput.value = '';
+        render();
+      } catch (err) {
+        alert('Could not read that backup file: ' + err.message);
+        restoreInput.value = '';
+      }
+    });
+
+    // Initialise the save badge on first paint
+    if (loadState()) lastSavedAt = Date.now();
+    pulseSaveBadge();
 
     render();
   </script>
