@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#06b6d4" />
   <title>amazon-operator-stack — guided setup</title>
 
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2306b6d4'/%3E%3Crect x='6' y='22' width='14' height='2' rx='1' fill='white'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -655,6 +656,12 @@
     //  HELPERS
     // ════════════════════════════════════════════════════════
     function el(tag, attrs = {}, ...children) {
+      // Forgiving signature: if 2nd arg is a string or DOM node, treat as a child
+      // and skip attrs. Caught a bug in step 6 where I passed text as attrs.
+      if (typeof attrs === 'string' || attrs instanceof Node) {
+        children = [attrs, ...children];
+        attrs = {};
+      }
       const e = document.createElement(tag);
       for (const [k, v] of Object.entries(attrs)) {
         if (k === 'class') e.className = v;
