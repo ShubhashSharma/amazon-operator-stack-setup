@@ -1,6 +1,6 @@
 # amazon-operator-stack — guided setup
 
-A privacy-by-design web wizard that walks Amazon sellers through SP-API credential capture, alongside the Saturday Seller Sessions Live 2026 stage demo.
+A privacy-by-design web wizard that walks Amazon sellers through SP-API credential capture. Designed as a **take-home** companion to the Seller Sessions Live 2026 stage demo.
 
 **Live:** https://amazon-operator-stack-setup.vercel.app *(deployed from `main`)*
 
@@ -8,7 +8,15 @@ A privacy-by-design web wizard that walks Amazon sellers through SP-API credenti
 
 ## What it does
 
-A single-page web form that mirrors the 7 steps of the CLI wizard (`npm run setup` in the main repo). Attendees follow Shubhash on stage as he walks through Seller Central, paste their values into each step, and at the end download a working `.env` file they drop into the cloned CLI repo.
+A single-page web form that mirrors the 7 steps of the CLI wizard (`npm run setup` in the main repo). Attendees take it home, work through it at their own pace, and at the end download a working `.env` file plus a single copy-paste command that clones the repo, drops the `.env` in place, and wires it into Claude Code.
+
+## Take-home robustness
+
+Designed for unattended async use. Three things make it survive:
+
+- **Autosave badge.** A "✓ Saved" pill pulses on every change, then settles into "Saved Xs / m / h ago". If `localStorage` is full or disabled (incognito, restrictive policies), it switches to "Save failed" in red — no silent loss.
+- **Backup + restore.** Two discreet links at the bottom: "Save backup" downloads `aos-progress-YYYY-MM-DD-HHmm.json`, "Restore from backup" reads it back. Belt + braces for cleared caches, switched browsers, accidental resets.
+- **One-paste finish.** Step 7 generates a single bash (or PowerShell) block that clones the repo if needed, drops the `.env` in place, runs `npm install`, runs the smoke-test, and wires the MCP server into Claude Code. Auto-detects OS, copyable with one click (with text-selection fallback if the clipboard API fails).
 
 | Step | What the attendee does |
 |------|------------------------|
