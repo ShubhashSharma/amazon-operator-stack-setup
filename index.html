@@ -844,6 +844,21 @@
     }
     setInterval(refreshSaveBadgeTime, 5000);
 
+    // Dummy values for ?dev=1 — used by Shubhash to dry-run the form quickly
+    // before stage. Pass validation but are obviously fake.
+    const DEV_DUMMY = {
+      step: 7,
+      region: 'EU',
+      primaryMarketplaceId: 'A1F83G8C2ARO7P',
+      primaryMarketplaceCode: 'GB',
+      primaryMarketplaceLabel: 'United Kingdom (amazon.co.uk)',
+      enabledMarketplaceIds: ['A1F83G8C2ARO7P', 'A1PA6795UKMFR9'],
+      appName: 'Operator Command Centre',
+      clientId: 'amzn1.application-oa2-client.DUMMY_DEV_CLIENT_ID_PADDED_TO_VALID_LENGTH',
+      clientSecret: 'amzn1.oa2-cs.v1.DUMMY_DEV_SECRET_PADDED_TO_VALID_LENGTH_XXXXXXXXXXXX',
+      refreshToken: 'Atzr|DUMMY_DEV_REFRESH_TOKEN_PADDED_TO_VALID_LENGTH_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+    };
+
     let state = loadState() || {
       step: 1,
       region: null,
@@ -854,6 +869,19 @@
       clientSecret: '',
       refreshToken: '',
     };
+
+    // ?dev=1 → prefill all fields with dummy values + jump to step 7.
+    // ?dev=4 → prefill + jump to step N (1..7) for testing a specific stage.
+    {
+      const params = new URLSearchParams(location.search);
+      const devVal = params.get('dev');
+      if (devVal !== null) {
+        state = { ...DEV_DUMMY };
+        const target = parseInt(devVal, 10);
+        if (target >= 1 && target <= 7) state.step = target;
+        saveState();
+      }
+    }
 
     // ════════════════════════════════════════════════════════
     //  RENDER ENGINE
@@ -1346,15 +1374,35 @@
       card.appendChild(el('p', { class: 'lede' },
         'Two clicks to finish: download the .env, then paste a single command into your terminal. The command clones the repo (if needed), drops the .env in place, installs everything, runs the smoke-test, and wires it into Claude Code.'));
 
-      // 1 — Download
+      // 1 — Download (with copy-as-text fallback if browser blocks downloads)
       card.appendChild(el('div', { class: 'download-card' },
         el('div', { class: 'filename' }, 'amazon-operator-stack.env'),
         el('button', { class: 'btn primary', id: 'download-env-btn', onclick: e => {
           downloadEnv();
-          e.target.textContent = '✓ Downloaded — now run the command below';
+          e.target.textContent = '✓ Downloaded — check your Downloads folder';
           e.target.disabled = true;
           setTimeout(() => { e.target.textContent = 'Download .env again'; e.target.disabled = false; }, 4000);
         } }, 'Download .env'),
+      ));
+
+      // Fallback for blocked downloads: show the env contents in a copyable block
+      card.appendChild(el('details', { class: 'help-panel', style: 'background:#f0fdfa; border-color:var(--teal-line);' },
+        el('summary', { style: 'color:var(--teal-dark);' }, "Download didn't appear? Copy the contents directly."),
+        el('div', { class: 'qa-list' },
+          el('div', { style: 'font-size:0.875rem; color:var(--ink-2); line-height:1.55; margin-bottom:8px;' },
+            "If your browser blocked the download (some corporate setups do), copy the text below and save it as a file named ",
+            el('code', { style: 'background:white; padding:2px 6px; border-radius:4px; border:1px solid var(--line);' }, '.env'),
+            " inside your cloned repo folder."),
+          el('div', {
+            style: 'display:flex; justify-content:flex-end; margin:8px 0;',
+          },
+            el('button', { class: 'copy-btn', id: 'copy-env-btn', onclick: copyEnvContents }, 'Copy .env contents'),
+          ),
+          el('pre', {
+            id: 'env-contents-pre',
+            style: 'background:var(--ink-1); color:#e2e8f0; padding:14px 18px; border-radius:var(--radius-sm); overflow-x:auto; font-size:0.75rem; line-height:1.55; max-height:280px; overflow-y:auto;',
+          }, generateEnv()),
+        ),
       ));
 
       // 2 — OS tabs + one-paste command
@@ -1405,6 +1453,32 @@
         document.querySelectorAll('.os-tab').forEach(t => t.classList.toggle('active',
           t.textContent.startsWith(chosenOs === 'win' ? 'Windows' : 'macOS')));
       } }, label);
+    }
+
+    function copyEnvContents() {
+      const text = generateEnv();
+      const btn = document.getElementById('copy-env-btn');
+      const flash = (label, ok = true) => {
+        if (!btn) return;
+        btn.textContent = label;
+        btn.classList.toggle('copied', ok);
+        setTimeout(() => { btn.textContent = 'Copy .env contents'; btn.classList.remove('copied'); }, 2400);
+      };
+      const pre = document.getElementById('env-contents-pre');
+      if (pre) {
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      if (!navigator.clipboard?.writeText) {
+        flash('Selected — press ' + (chosenOs === 'win' ? 'Ctrl+C' : 'Cmd+C'), true);
+        return;
+      }
+      navigator.clipboard.writeText(text)
+        .then(() => flash('✓ Copied', true))
+        .catch(() => flash('Selected — press ' + (chosenOs === 'win' ? 'Ctrl+C' : 'Cmd+C'), true));
     }
 
     function copyMegaCommand() {
