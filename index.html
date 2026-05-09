@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Connect your Amazon seller account to Claude Code. Built for Seller Sessions Live 2026 by not a square." />
+  <meta name="theme-color" content="#06b6d4" />
+  <title>amazon-operator-stack — guided setup</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ────────────────────────────────────────────────────────
+       Reset + design tokens
+    ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:        #06b6d4;
+      --teal-dark:   #0891b2;
+      --teal-soft:   #ecfeff;
+      --teal-line:   #67e8f9;
+
+      --ink-1:       #0f172a;
+      --ink-2:       #334155;
+      --ink-3:       #64748b;
+      --ink-4:       #94a3b8;
+
+      --paper:       #ffffff;
+      --bg:          #fafafa;
+      --line:        #e2e8f0;
+      --line-soft:   #f1f5f9;
+
+      --good:        #10b981;
+      --warn:        #f59e0b;
+      --bad:         #ef4444;
+
+      --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+      --shadow-pop:  0 12px 40px rgba(15, 23, 42, 0.10);
+
+      --radius-sm:   8px;
+      --radius:      12px;
+      --radius-lg:   16px;
+    }
+
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-feature-settings: 'cv02','cv03','cv04','cv11';
+      color: var(--ink-1);
+      background: var(--bg);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    code, pre { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.875rem; }
+
+    a { color: var(--teal-dark); text-decoration: none; }
+    a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+    /* ────────────────────────────────────────────────────────
+       Layout
+    ──────────────────────────────────────────────────────── */
+    .page { max-width: 880px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    header.top {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid var(--line);
+    }
+    header.top .brand {
+      font-weight: 600;
+      font-size: 1.0625rem;
+      letter-spacing: -0.01em;
+      color: var(--ink-1);
+      position: relative;
+      padding-bottom: 4px;
+    }
+    header.top .brand::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 28px;
+      height: 2px;
+      background: var(--teal);
+      border-radius: 2px;
+    }
+    header.top .by {
+      font-size: 0.8125rem;
+      color: var(--ink-4);
+      margin-left: auto;
+    }
+    header.top .by a { color: var(--ink-3); }
+
+    /* ────────────────────────────────────────────────────────
+       Progress bar
+    ──────────────────────────────────────────────────────── */
+    .progress {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 32px;
+      align-items: center;
+    }
+    .progress .step-pip {
+      flex: 1;
+      height: 4px;
+      background: var(--line);
+      border-radius: 4px;
+      transition: background 200ms ease;
+    }
+    .progress .step-pip.done { background: var(--teal); }
+    .progress .step-pip.active { background: var(--teal); }
+
+    .step-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--ink-4);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .step-meta strong { color: var(--teal-dark); font-weight: 600; }
+
+    /* ────────────────────────────────────────────────────────
+       Card
+    ──────────────────────────────────────────────────────── */
+    .card {
+      background: var(--paper);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      padding: 40px 44px;
+      animation: cardIn 280ms ease;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--ink-1);
+      margin-bottom: 12px;
+    }
+
+    .card .lede {
+      font-size: 1rem;
+      color: var(--ink-3);
+      margin-bottom: 28px;
+      max-width: 60ch;
+    }
+
+    /* About this step block */
+    .why-block {
+      background: var(--teal-soft);
+      border-left: 3px solid var(--teal);
+      padding: 16px 20px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 16px;
+      font-size: 0.9375rem;
+    }
+    .why-block .label {
+      color: var(--ink-3);
+      font-weight: 500;
+      font-size: 0.8125rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      align-self: start;
+      padding-top: 2px;
+    }
+    .why-block .text { color: var(--ink-2); }
+
+    /* Instruction note */
+    .note {
+      background: var(--line-soft);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 24px 0;
+      font-size: 0.9375rem;
+      color: var(--ink-2);
+    }
+    .note h4 {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-3);
+      margin-bottom: 12px;
+    }
+    .note ol {
+      padding-left: 18px;
+      margin: 0;
+    }
+    .note ol li { margin-bottom: 8px; }
+    .note ol li:last-child { margin-bottom: 0; }
+    .note .small {
+      display: block;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--line);
+      color: var(--ink-3);
+      font-size: 0.875rem;
+    }
+    .note code {
+      background: var(--paper);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      color: var(--ink-1);
+    }
+
+    /* Forms */
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink-2);
+      margin-bottom: 6px;
+    }
+    .field .hint {
+      font-size: 0.8125rem;
+      color: var(--ink-3);
+      margin-bottom: 8px;
+    }
+    .field input[type="text"],
+    .field input[type="password"],
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      color: var(--ink-1);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+      font-feature-settings: 'cv02','cv03','cv04','cv11';
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+    }
+    .field input.invalid {
+      border-color: var(--bad);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.10);
+    }
+    .field .error {
+      display: none;
+      font-size: 0.8125rem;
+      color: var(--bad);
+      margin-top: 6px;
+    }
+    .field.show-error .error { display: block; }
+
+    /* Choice cards (radio / checkbox in card form) */
+    .choice-list { display: grid; gap: 10px; margin-bottom: 24px; }
+    .choice {
+      display: flex;
+      gap: 14px;
+      padding: 16px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 120ms ease, background 120ms ease;
+      background: var(--paper);
+    }
+    .choice:hover { border-color: var(--ink-4); }
+    .choice.selected {
+      border-color: var(--teal);
+      background: var(--teal-soft);
+      box-shadow: inset 0 0 0 1px var(--teal);
+    }
+    .choice .indicator {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid var(--ink-4);
+      flex-shrink: 0;
+      margin-top: 2px;
+      position: relative;
+      transition: border-color 120ms ease;
+    }
+    .choice.selected .indicator { border-color: var(--teal); }
+    .choice.selected .indicator::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+    .choice.checkbox .indicator { border-radius: 4px; }
+    .choice.checkbox.selected .indicator::after {
+      inset: 2px;
+      border-radius: 2px;
+    }
+    .choice .body { flex: 1; }
+    .choice .body .title { font-weight: 500; color: var(--ink-1); margin-bottom: 2px; }
+    .choice .body .sub   { font-size: 0.875rem; color: var(--ink-3); }
+
+    /* Buttons */
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease;
+    }
+    .btn.primary {
+      background: var(--teal);
+      color: white;
+    }
+    .btn.primary:hover { background: var(--teal-dark); }
+    .btn.primary:disabled {
+      background: var(--ink-4);
+      cursor: not-allowed;
+    }
+    .btn.ghost {
+      background: transparent;
+      color: var(--ink-3);
+    }
+    .btn.ghost:hover { color: var(--ink-1); }
+    .btn .arrow { font-size: 1.05em; line-height: 1; }
+
+    /* Pre-flight check rows */
+    .check-list { display: grid; gap: 10px; margin-bottom: 24px; }
+    .check-row {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 18px;
+      background: var(--line-soft);
+      border-radius: var(--radius-sm);
+      font-size: 0.9375rem;
+    }
+    .check-row .icon {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .check-row .icon.good { background: var(--good); }
+    .check-row .icon.warn { background: var(--warn); }
+    .check-row .label { color: var(--ink-2); }
+
+    /* Probe matrix preview */
+    .probe-list { display: grid; gap: 8px; }
+    .probe-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--line-soft);
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      color: var(--ink-2);
+    }
+    .probe-row .tick { color: var(--good); font-weight: 700; }
+
+    /* Final / download */
+    .download-card {
+      background: linear-gradient(135deg, var(--teal-soft), #f0fdfa);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .download-card .filename {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9375rem;
+      color: var(--ink-2);
+      margin-bottom: 18px;
+    }
+    .download-card .btn {
+      padding: 14px 28px;
+      font-size: 1rem;
+    }
+
+    .next-steps {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .next-steps h4 {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-3);
+      margin-bottom: 14px;
+    }
+    .next-steps pre {
+      background: var(--ink-1);
+      color: #e2e8f0;
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      margin: 8px 0;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+    .next-steps pre .comment { color: #94a3b8; }
+    .next-steps pre .accent  { color: #67e8f9; }
+
+    /* Restart row */
+    .restart-row {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.8125rem;
+      color: var(--ink-4);
+    }
+    .restart-row a {
+      color: var(--ink-4);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .restart-row a:hover { color: var(--ink-2); }
+
+    /* Footer */
+    footer.bot {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      font-size: 0.8125rem;
+      color: var(--ink-4);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Mobile tightening */
+    @media (max-width: 640px) {
+      .page { padding: 20px 16px 64px; }
+      .card { padding: 28px 22px; }
+      .card h1 { font-size: 1.4rem; }
+      .actions { flex-direction: column-reverse; align-items: stretch; }
+      .actions .btn { justify-content: center; }
+    }
+
+    /* Privacy badge */
+    .privacy {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--teal-soft);
+      color: var(--teal-dark);
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    .privacy::before {
+      content: '●';
+      font-size: 0.6em;
+      line-height: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="brand">amazon-operator-stack</div>
+      <div class="by">Built for <a href="https://sellersessions.com" target="_blank" rel="noopener">Seller Sessions Live 2026</a> by <a href="https://github.com/ShubhashSharma/amazon-operator-stack" target="_blank" rel="noopener">not a square</a></div>
+    </header>
+
+    <div class="step-meta">
+      <span>Step <strong id="step-current">1</strong> of 7</span>
+      <span id="step-title-meta">Welcome</span>
+    </div>
+
+    <div class="progress" id="progress"></div>
+
+    <div id="card-host"></div>
+
+    <div class="restart-row">
+      Want a clean slate? <a href="#" id="restart-link">Reset and start over</a>.
+    </div>
+
+    <footer class="bot">
+      <div>
+        Privacy-by-design. Your refresh token never leaves this browser. <a href="https://github.com/ShubhashSharma/amazon-operator-stack-setup" target="_blank" rel="noopener">View source</a>.
+      </div>
+      <div>
+        <a href="https://github.com/ShubhashSharma/amazon-operator-stack" target="_blank" rel="noopener">CLI repo</a> · MIT
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ════════════════════════════════════════════════════════
+    //  REFERENCE DATA (mirrors src/wizard/marketplaces.ts)
+    // ════════════════════════════════════════════════════════
+    const REGIONS = {
+      EU: {
+        label: 'Europe',
+        sub: 'UK, Germany, France, Italy, Spain, Netherlands, Sweden, Poland, Belgium, Turkey',
+        spApiEndpoint:  'https://sellingpartnerapi-eu.amazon.com',
+        spApiAwsRegion: 'eu-west-1',
+        adsApiEndpoint: 'https://advertising-api-eu.amazon.com',
+      },
+      NA: {
+        label: 'North America',
+        sub: 'US, Canada, Mexico, Brazil',
+        spApiEndpoint:  'https://sellingpartnerapi-na.amazon.com',
+        spApiAwsRegion: 'us-east-1',
+        adsApiEndpoint: 'https://advertising-api.amazon.com',
+      },
+      FE: {
+        label: 'Far East',
+        sub: 'Japan, Australia, Singapore, India',
+        spApiEndpoint:  'https://sellingpartnerapi-fe.amazon.com',
+        spApiAwsRegion: 'us-west-2',
+        adsApiEndpoint: 'https://advertising-api-fe.amazon.com',
+      },
+    };
+
+    const MARKETPLACES = [
+      // EU
+      { code: 'GB', label: 'United Kingdom (amazon.co.uk)', id: 'A1F83G8C2ARO7P', region: 'EU' },
+      { code: 'DE', label: 'Germany (amazon.de)',           id: 'A1PA6795UKMFR9', region: 'EU' },
+      { code: 'FR', label: 'France (amazon.fr)',            id: 'A13V1IB3VIYZZH', region: 'EU' },
+      { code: 'IT', label: 'Italy (amazon.it)',             id: 'APJ6JRA9NG5V4',  region: 'EU' },
+      { code: 'ES', label: 'Spain (amazon.es)',             id: 'A1RKKUPIHCS9HS', region: 'EU' },
+      { code: 'NL', label: 'Netherlands (amazon.nl)',       id: 'A1805IZSGTT6HS', region: 'EU' },
+      { code: 'SE', label: 'Sweden (amazon.se)',            id: 'A2NODRKZP88ZB9', region: 'EU' },
+      { code: 'PL', label: 'Poland (amazon.pl)',            id: 'A1C3SOZRARQ6R3', region: 'EU' },
+      { code: 'BE', label: 'Belgium (amazon.com.be)',       id: 'AMEN7PMS3EDWL',  region: 'EU' },
+      { code: 'TR', label: 'Turkey (amazon.com.tr)',        id: 'A33AVAJ2PDY3EV', region: 'EU' },
+      // NA
+      { code: 'US', label: 'United States (amazon.com)',    id: 'ATVPDKIKX0DER',  region: 'NA' },
+      { code: 'CA', label: 'Canada (amazon.ca)',            id: 'A2EUQ1WTGCTBG2',  region: 'NA' },
+      { code: 'MX', label: 'Mexico (amazon.com.mx)',        id: 'A1AM78C64UM0Y8',  region: 'NA' },
+      { code: 'BR', label: 'Brazil (amazon.com.br)',        id: 'A2Q3Y263D00KWC',  region: 'NA' },
+      // FE
+      { code: 'JP', label: 'Japan (amazon.co.jp)',          id: 'A1VC38T7YXB528',  region: 'FE' },
+      { code: 'AU', label: 'Australia (amazon.com.au)',     id: 'A39IBJ37TRP1C6',  region: 'FE' },
+      { code: 'SG', label: 'Singapore (amazon.sg)',         id: 'A19VAU5U5O7RUS',  region: 'FE' },
+      { code: 'IN', label: 'India (amazon.in)',             id: 'A21TJRUUN4KGV',   region: 'FE' },
+    ];
+
+    const DEFAULT_PRIMARY = { EU: 'A1F83G8C2ARO7P', NA: 'ATVPDKIKX0DER', FE: 'A1VC38T7YXB528' };
+    const DEFAULT_APP_NAME = 'Operator Command Centre';
+    const DEV_CONSOLE_URL = 'https://sellercentral.amazon.com/sellingpartner/developerconsole';
+
+    // ════════════════════════════════════════════════════════
+    //  STATE
+    // ════════════════════════════════════════════════════════
+    const STORAGE_KEY = 'aos-setup-state-v1';
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch { return null; }
+    }
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function resetState() { localStorage.removeItem(STORAGE_KEY); location.reload(); }
+
+    let state = loadState() || {
+      step: 1,
+      region: null,
+      primaryMarketplaceId: null,
+      enabledMarketplaceIds: [],
+      appName: DEFAULT_APP_NAME,
+      clientId: '',
+      clientSecret: '',
+      refreshToken: '',
+    };
+
+    // ════════════════════════════════════════════════════════
+    //  RENDER ENGINE
+    // ════════════════════════════════════════════════════════
+    const STEPS = [
+      { n: 1, title: 'Welcome',                         render: renderStep1 },
+      { n: 2, title: 'Pick your region',                render: renderStep2 },
+      { n: 3, title: 'Pick your marketplaces',          render: renderStep3 },
+      { n: 4, title: 'Create your SP-API app',          render: renderStep4 },
+      { n: 5, title: 'Authorise + capture token',       render: renderStep5 },
+      { n: 6, title: 'Confirm what you have',           render: renderStep6 },
+      { n: 7, title: 'Download your .env',              render: renderStep7 },
+    ];
+
+    function go(n) {
+      state.step = Math.max(1, Math.min(STEPS.length, n));
+      saveState();
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function render() {
+      // Progress + meta
+      const total = STEPS.length;
+      const cur = state.step;
+      document.getElementById('step-current').textContent = cur;
+      document.getElementById('step-title-meta').textContent = STEPS[cur - 1].title;
+
+      const progress = document.getElementById('progress');
+      progress.innerHTML = '';
+      for (let i = 1; i <= total; i++) {
+        const pip = document.createElement('div');
+        pip.className = 'step-pip ' + (i < cur ? 'done' : i === cur ? 'active' : '');
+        progress.appendChild(pip);
+      }
+
+      // Card body
+      const host = document.getElementById('card-host');
+      host.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'card';
+      host.appendChild(card);
+      STEPS[cur - 1].render(card);
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  HELPERS
+    // ════════════════════════════════════════════════════════
+    function el(tag, attrs = {}, ...children) {
+      const e = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'class') e.className = v;
+        else if (k === 'html') e.innerHTML = v;
+        else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+        else e.setAttribute(k, v);
+      }
+      for (const c of children.flat()) {
+        if (c == null) continue;
+        e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+      }
+      return e;
+    }
+
+    function whyBlock(why, next) {
+      return el('div', { class: 'why-block' },
+        el('div', { class: 'label' }, 'Why we ask'),
+        el('div', { class: 'text' }, why),
+        el('div', { class: 'label' }, 'What happens next'),
+        el('div', { class: 'text' }, next),
+      );
+    }
+
+    function actionsBar(opts) {
+      const wrap = el('div', { class: 'actions' });
+      const back = el('button', { class: 'btn ghost', onclick: opts.onBack || (() => go(state.step - 1)) },
+        el('span', { class: 'arrow' }, '←'),
+        el('span', {}, opts.backLabel || 'Back'),
+      );
+      if (state.step === 1 || opts.hideBack) back.style.visibility = 'hidden';
+
+      const next = el('button', { class: 'btn primary', onclick: opts.onNext },
+        el('span', {}, opts.nextLabel || 'Continue'),
+        el('span', { class: 'arrow' }, '→'),
+      );
+      if (opts.disabled) next.disabled = true;
+      if (opts.nextId) next.id = opts.nextId;
+
+      wrap.appendChild(back);
+      wrap.appendChild(next);
+      return wrap;
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  STEP 1 — Welcome
+    // ════════════════════════════════════════════════════════
+    function renderStep1(card) {
+      card.appendChild(el('div', { class: 'privacy' }, 'No backend. Your refresh token never leaves this browser.'));
+      card.appendChild(el('h1', {}, 'Connect your Amazon seller account to Claude Code.'));
+      card.appendChild(el('p', { class: 'lede' },
+        'This guide takes about 25 minutes alongside the live walk-through. At the end you download a .env file you drop into the cloned repo. Your credentials never leave your browser.'));
+
+      card.appendChild(el('div', { class: 'note' },
+        el('h4', {}, 'Before you start'),
+        el('ol', {},
+          el('li', { html: 'A <strong>Pro Seller</strong> Amazon account (not Individual).' }),
+          el('li', { html: '<strong>Account holder</strong> access (not a staff sub-user).' }),
+          el('li', { html: 'A laptop with <strong>Node 20+</strong> and <strong>Claude Code</strong> installed.' }),
+          el('li', { html: 'The <code>git clone</code> ready: <code>git clone https://github.com/ShubhashSharma/amazon-operator-stack.git</code>' }),
+        ),
+        el('div', { class: 'small', html: 'Each step explains <em>why we ask</em> and <em>what happens next</em> so nothing feels arbitrary. You can save and resume any time on this device.' }),
+      ));
+
+      card.appendChild(actionsBar({
+        nextLabel: "Let's go",
+        onNext: () => go(2),
+      }));
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  STEP 2 — Pick region
+    // ════════════════════════════════════════════════════════
+    function renderStep2(card) {
+      card.appendChild(el('h1', {}, 'Pick your Amazon region.'));
+      card.appendChild(el('p', { class: 'lede' },
+        "Amazon runs three regional clouds. Your Seller Central account lives in one of them — we need to pick the right one to talk to it."));
+
+      card.appendChild(whyBlock(
+        'Region picks the SP-API endpoint we point at. Get it wrong and every call returns 403.',
+        'We use it to filter the marketplace list on the next step and to set the right endpoint URL in your .env.',
+      ));
+
+      const list = el('div', { class: 'choice-list' });
+      for (const [key, cfg] of Object.entries(REGIONS)) {
+        const choice = el('div', { class: 'choice' + (state.region === key ? ' selected' : ''), onclick: () => {
+          state.region = key;
+          // reset marketplaces if region changed
+          state.primaryMarketplaceId = null;
+          state.enabledMarketplaceIds = [];
+          saveState(); render();
+        } },
+          el('div', { class: 'indicator' }),
+          el('div', { class: 'body' },
+            el('div', { class: 'title' }, cfg.label),
+            el('div', { class: 'sub' }, cfg.sub),
+          ),
+        );
+        list.appendChild(choice);
+      }
+      card.appendChild(list);
+
+      card.appendChild(actionsBar({
+        disabled: !state.region,
+        onNext: () => go(3),
+      }));
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  STEP 3 — Pick marketplaces
+    // ════════════════════════════════════════════════════════
+    function renderStep3(card) {
+      card.appendChild(el('h1', {}, 'Pick your marketplaces.'));
+      card.appendChild(el('p', { class: 'lede' },
+        'Pick your primary marketplace (the one we test against) and tick any others you sell on.'));
+
+      card.appendChild(whyBlock(
+        'Each country is a separate marketplace with its own ID. The primary is what the smoke-test runs against.',
+        'We bake the primary ID and the enabled list into your .env so the MCP server knows which marketplaces it can read from.',
+      ));
+
+      // Default primary if not set
+      if (!state.primaryMarketplaceId && state.region) {
+        state.primaryMarketplaceId = DEFAULT_PRIMARY[state.region];
+        state.enabledMarketplaceIds = MARKETPLACES.filter(m => m.region === state.region).map(m => m.id);
+      }
+
+      // Primary
+      card.appendChild(el('div', { class: 'field' },
+        el('label', {}, 'Primary marketplace'),
+        el('div', { class: 'hint' }, 'Used by the smoke-test and the live demo.'),
+        (() => {
+          const sel = el('select');
+          for (const m of MARKETPLACES.filter(m => m.region === state.region)) {
+            const o = el('option', { value: m.id }, m.label);
+            if (m.id === state.primaryMarketplaceId) o.selected = true;
+            sel.appendChild(o);
+          }
+          sel.addEventListener('change', e => {
+            state.primaryMarketplaceId = e.target.value;
+            // ensure primary is in enabled list
+            if (!state.enabledMarketplaceIds.includes(e.target.value)) {
+              state.enabledMarketplaceIds.push(e.target.value);
+            }
+            saveState();
+          });
+          return sel;
+        })(),
+      ));
+
+      // Enabled marketplaces
+      card.appendChild(el('label', { class: 'field-label-standalone', style: 'display:block; font-size:0.875rem; font-weight:500; color:var(--ink-2); margin-bottom:6px;' }, 'Enabled marketplaces'));
+      card.appendChild(el('div', { class: 'hint', style: 'font-size:0.8125rem; color:var(--ink-3); margin-bottom:12px;' }, 'Untick the countries you do not sell in. The primary stays selected.'));
+
+      const list = el('div', { class: 'choice-list' });
+      for (const m of MARKETPLACES.filter(m => m.region === state.region)) {
+        const isPrimary = m.id === state.primaryMarketplaceId;
+        const isOn = state.enabledMarketplaceIds.includes(m.id) || isPrimary;
+        const choice = el('div', { class: 'choice checkbox' + (isOn ? ' selected' : ''), onclick: () => {
+          if (isPrimary) return; // primary cannot be unticked
+          if (state.enabledMarketplaceIds.includes(m.id)) {
+            state.enabledMarketplaceIds = state.enabledMarketplaceIds.filter(id => id !== m.id);
+          } else {
+            state.enabledMarketplaceIds.push(m.id);
+          }
+          saveState(); render();
+        } },
+          el('div', { class: 'indicator' }),
+          el('div', { class: 'body' },
+            el('div', { class: 'title' }, m.label + (isPrimary ? '  (primary)' : '')),
+            el('div', { class: 'sub' }, m.id),
+          ),
+        );
+        list.appendChild(choice);
+      }
+      card.appendChild(list);
+
+      card.appendChild(actionsBar({
+        onNext: () => go(4),
+      }));
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  STEP 4 — Developer registration + create SP-API app
+    // ════════════════════════════════════════════════════════
+    function renderStep4(card) {
+      card.appendChild(el('h1', {}, 'Register as a developer and create your app.'));
+      card.appendChild(el('p', { class: 'lede' },
+        "Amazon needs you to register as a developer (one-time, free, instant for read-only roles) and create an app for your own seller account. The app is private — only you use it."));
+
+      card.appendChild(whyBlock(
+        'You need an LWA app inside your Seller Central to mint tokens. Self-authorised apps are approved instantly.',
+        'You will fill a short form on Amazon and copy two values back here: the LWA Client ID and Client Secret.',
+      ));
+
+      card.appendChild(el('div', { class: 'note' },
+        el('h4', {}, 'A — Register as a developer'),
+        el('ol', {},
+          el('li', { html: '1. Open <a href="' + DEV_CONSOLE_URL + '" target="_blank" rel="noopener">Seller Central → Develop Apps</a>.' }),
+          el('li', { html: '2. If you see <strong>"Register as a Developer"</strong>, click it. Pick: <em>"I or the company I represent are developing applications for our own use."</em> This path is approved instantly.' }),
+          el('li', { html: '3. Accept the SP-API Developer Agreement.' }),
+        ),
+        el('div', { class: 'small' }, 'Already registered before? Skip to part B below.'),
+      ));
+
+      card.appendChild(el('div', { class: 'note' },
+        el('h4', {}, 'B — Create the SP-API app'),
+        el('ol', {},
+          el('li', { html: '1. Still in <a href="' + DEV_CONSOLE_URL + '" target="_blank" rel="noopener">Develop Apps</a>, click <strong>"Add new app client"</strong>.' }),
+          el('li', { html: '2. Fill the form: <strong>App name</strong> (use the default below), <strong>API type</strong> = SP-API, leave IAM ARN / OAuth URLs <strong>blank</strong>.' }),
+          el('li', { html: '3. Pick the roles. Recommended for today: <em>Inventory and Order Tracking</em>, <em>Pricing</em>, <em>Product Listing</em>, <em>Selling Partner Insights</em>, <em>Finance and Accounting</em>.' }),
+          el('li', { html: '4. Submit. The app appears in your dashboard.' }),
+        ),
+      ));
+
+      card.appendChild(el('div', { class: 'field' },
+        el('label', {}, 'App name'),
+        el('div', { class: 'hint' }, 'This is what shows up in your developer dashboard later.'),
+        (() => {
+          const inp = el('input', { type: 'text', value: state.appName, placeholder: DEFAULT_APP_NAME });
+          inp.addEventListener('input', e => { state.appName = e.target.value || DEFAULT_APP_NAME; saveState(); });
+          return inp;
+        })(),
+      ));
+
+      card.appendChild(el('div', { class: 'note' },
+        el('h4', {}, 'C — Copy the LWA credentials'),
+        el('ol', {},
+          el('li', { html: '1. On your app row, click <strong>"View"</strong> next to "LWA credentials".' }),
+          el('li', { html: '2. Copy the <strong>Client identifier</strong> and <strong>Client secret</strong> values.' }),
+          el('li', { html: '3. Paste them below. Both start with <code>amzn1.</code>' }),
+        ),
+        el('div', { class: 'small' }, 'These never leave your browser. They go directly into your downloaded .env file.'),
+      ));
+
+      const ciField = el('div', { class: 'field' },
+        el('label', {}, 'LWA Client identifier'),
+        el('div', { class: 'hint', html: 'Long string starting with <code>amzn1.application-oa2-client.</code>' }),
+        (() => {
+          const inp = el('input', { type: 'text', value: state.clientId, placeholder: 'amzn1.application-oa2-client.xxxxxxxxxxxxxxxx', autocomplete: 'off' });
+          inp.addEventListener('input', e => {
+            state.clientId = e.target.value.trim();
+            saveState();
+            const valid = isValidClientId(state.clientId);
+            inp.classList.toggle('invalid', state.clientId.length > 0 && !valid);
+            ciField.classList.toggle('show-error', state.clientId.length > 0 && !valid);
+            updateNextButton();
+          });
+          return inp;
+        })(),
+        el('div', { class: 'error' }, 'That does not look right. Should start with "amzn1." and be at least 30 characters.'),
+      );
+      card.appendChild(ciField);
+
+      const csField = el('div', { class: 'field' },
+        el('label', {}, 'LWA Client secret'),
+        el('div', { class: 'hint' }, 'Long string. Treat like a password.'),
+        (() => {
+          const inp = el('input', { type: 'password', value: state.clientSecret, placeholder: '••••••••••••••••', autocomplete: 'new-password' });
+          inp.addEventListener('input', e => {
+            state.clientSecret = e.target.value;
+            saveState();
+            const valid = isValidClientSecret(state.clientSecret);
+            inp.classList.toggle('invalid', state.clientSecret.length > 0 && !valid);
+            csField.classList.toggle('show-error', state.clientSecret.length > 0 && !valid);
+            updateNextButton();
+          });
+          return inp;
+        })(),
+        el('div', { class: 'error' }, 'Looks too short. The Client secret is a long string.'),
+      );
+      card.appendChild(csField);
+
+      card.appendChild(actionsBar({
+        nextId: 'step4-next',
+        disabled: !(isValidClientId(state.clientId) && isValidClientSecret(state.clientSecret)),
+        onNext: () => go(5),
+      }));
+
+      function updateNextButton() {
+        const btn = document.getElementById('step4-next');
+        if (!btn) return;
+        btn.disabled = !(isValidClientId(state.clientId) && isValidClientSecret(state.clientSecret));
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  STEP 5 — Self-authorise + paste refresh token
+    // ════════════════════════════════════════════════════════
+    function renderStep5(card) {
+      card.appendChild(el('h1', {}, 'Authorise the app and copy the refresh token.'));
+      card.appendChild(el('p', { class: 'lede' },
+        "A refresh token lets the MCP server talk to your seller account. Amazon gives you one when you click “Authorize” on your own app — no redirect, no callback, just one screen."));
+
+      card.appendChild(whyBlock(
+        "The refresh token never expires unless you revoke it. It carries the roles you ticked in the previous step.",
+        "You click Authorize, copy the long string Amazon shows, paste it here. Then we save everything to your downloadable .env.",
+      ));
+
+      card.appendChild(el('div', { class: 'note' },
+        el('h4', {}, 'How to get the refresh token'),
+        el('ol', {},
+          el('li', { html: '1. Go back to <a href="' + DEV_CONSOLE_URL + '" target="_blank" rel="noopener">Seller Central → Apps & Services → Develop Apps</a>.' }),
+          el('li', { html: '2. On your app row, click <strong>"Authorize"</strong>.' }),
+          el('li', { html: '3. Amazon shows a single screen with a long string starting with <code>Atzr|</code>. Copy it in full.' }),
+        ),
+        el('div', { class: 'small', html: '<strong>Treat this like a password.</strong> Anyone with this string can read your seller data. We save it directly to your downloaded .env, which is git-ignored.' }),
+      ));
+
+      const rtField = el('div', { class: 'field' },
+        el('label', {}, 'SP-API refresh token'),
+        el('div', { class: 'hint', html: 'Starts with <code>Atzr|</code>. Several hundred characters long.' }),
+        (() => {
+          const ta = el('textarea', { rows: 4, placeholder: 'Atzr|...', autocomplete: 'off' });
+          ta.value = state.refreshToken;
+          ta.style.fontFamily = "'JetBrains Mono', monospace";
+          ta.style.fontSize = '0.8125rem';
+          ta.addEventListener('input', e => {
+            state.refreshToken = e.target.value.trim();
+            saveState();
+            const valid = isValidRefreshToken(state.refreshToken);
+            ta.classList.toggle('invalid', state.refreshToken.length > 0 && !valid);
+            rtField.classList.toggle('show-error', state.refreshToken.length > 0 && !valid);
+            updateNextButton();
+          });
+          return ta;
+        })(),
+        el('div', { class: 'error' }, 'That does not look right. Refresh tokens start with "Atzr|" and are very long.'),
+      );
+      card.appendChild(rtField);
+
+      card.appendChild(actionsBar({
+        nextId: 'step5-next',
+        disabled: !isValidRefreshToken(state.refreshToken),
+        onNext: () => go(6),
+      }));
+
+      function updateNextButton() {
+        const btn = document.getElementById('step5-next');
+        if (!btn) return;
+        btn.disabled = !isValidRefreshToken(state.refreshToken);
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  STEP 6 — Confirm
+    // ════════════════════════════════════════════════════════
+    function renderStep6(card) {
+      card.appendChild(el('h1', {}, 'Confirm what you have.'));
+      card.appendChild(el('p', { class: 'lede' },
+        "Here's a summary of what we'll write into your .env file. Once you download it, the CLI takes over and runs the real probe matrix against Amazon."));
+
+      const region = REGIONS[state.region];
+      const primary = MARKETPLACES.find(m => m.id === state.primaryMarketplaceId);
+      const enabled = state.enabledMarketplaceIds.length || 1;
+
+      const list = el('div', { class: 'check-list' });
+      function row(ok, label) {
+        return el('div', { class: 'check-row' },
+          el('div', { class: 'icon ' + (ok ? 'good' : 'warn') }, ok ? '✓' : '!'),
+          el('div', { class: 'label', html: label }),
+        );
+      }
+      list.appendChild(row(true,  `Region: <strong>${region.label}</strong>`));
+      list.appendChild(row(true,  `Primary marketplace: <strong>${primary.label}</strong>`));
+      list.appendChild(row(true,  `Enabled marketplaces: <strong>${enabled}</strong>`));
+      list.appendChild(row(true,  `App name: <strong>${state.appName}</strong>`));
+      list.appendChild(row(true,  `LWA Client ID: <strong>${maskTail(state.clientId)}</strong>`));
+      list.appendChild(row(true,  `LWA Client Secret: <strong>•••• stored</strong>`));
+      list.appendChild(row(true,  `Refresh token: <strong>${maskTail(state.refreshToken, 6)}</strong>`));
+      card.appendChild(list);
+
+      card.appendChild(el('div', { class: 'note' },
+        el('h4', {}, 'What the CLI smoke-test will check next'),
+        el('ol', {},
+          el('li', '1. Exchange your refresh token for a real access token.'),
+          el('li', '2. Probe Orders, FBA Inventory, Finances, Reports, Marketplace Participations.'),
+          el('li', '3. Surface any role that needs adding back in Seller Central.'),
+        ),
+      ));
+
+      card.appendChild(actionsBar({
+        nextLabel: 'Download my .env',
+        onNext: () => go(7),
+      }));
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  STEP 7 — Download
+    // ════════════════════════════════════════════════════════
+    function renderStep7(card) {
+      card.appendChild(el('h1', {}, 'Save credentials and finish.'));
+      card.appendChild(el('p', { class: 'lede' },
+        'Download your .env, drop it into the cloned repo, and run the CLI commands below to wire it into Claude Code.'));
+
+      card.appendChild(el('div', { class: 'download-card' },
+        el('div', { class: 'filename' }, '.env'),
+        el('button', { class: 'btn primary', onclick: downloadEnv }, 'Download .env'),
+      ));
+
+      card.appendChild(el('div', { class: 'next-steps' },
+        el('h4', {}, 'Drop the file in + run these three commands'),
+        el('pre', { html: nextStepsCmd() }),
+      ));
+
+      card.appendChild(el('div', { class: 'next-steps' },
+        el('h4', {}, 'Try one of these in Claude Code'),
+        el('pre', { html: sampleQueries() }),
+      ));
+
+      card.appendChild(actionsBar({
+        backLabel: 'Edit my answers',
+        nextLabel: 'All done',
+        onNext: () => alert('All set. Welcome to the Operator Stack.'),
+      }));
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  ENV GENERATION
+    // ════════════════════════════════════════════════════════
+    function generateEnv() {
+      const region = REGIONS[state.region];
+      const primary = MARKETPLACES.find(m => m.id === state.primaryMarketplaceId);
+      const enabledIds = state.enabledMarketplaceIds.length
+        ? state.enabledMarketplaceIds.join(',')
+        : primary.id;
+
+      return [
+        `# Generated by amazon-operator-stack guided setup at ${new Date().toISOString()}`,
+        `# Do not commit this file. It contains credentials specific to your seller account.`,
+        ``,
+        `# SP-API — LWA app credentials`,
+        `SP_API_CLIENT_ID=${state.clientId}`,
+        `SP_API_CLIENT_SECRET=${state.clientSecret}`,
+        `SP_API_REFRESH_TOKEN=${state.refreshToken}`,
+        ``,
+        `# SP-API — primary marketplace + region`,
+        `SP_API_MARKETPLACE_ID=${primary.id}`,
+        `SP_API_MARKETPLACE_CODE=${primary.code}`,
+        `SP_API_ENABLED_MARKETPLACE_IDS=${enabledIds}`,
+        `SP_API_REGION=${region.spApiAwsRegion}`,
+        `SP_API_ENDPOINT=${region.spApiEndpoint}`,
+        ``,
+        `# Ads API — set these when you finish the homework in HOMEWORK.md`,
+        `ADS_API_CLIENT_ID=not-configured`,
+        `ADS_API_CLIENT_SECRET=not-configured`,
+        `ADS_API_REFRESH_TOKEN=not-configured`,
+        `ADS_API_REGION=${state.region}`,
+        `ADS_API_ENDPOINT=${region.adsApiEndpoint}`,
+        `ADS_PROFILE_ID=`,
+        ``,
+        `# Operator stack`,
+        `LOG_LEVEL=info`,
+        ``,
+      ].join('\n');
+    }
+
+    function downloadEnv() {
+      const blob = new Blob([generateEnv()], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = el('a', { href: url, download: '.env' });
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function nextStepsCmd() {
+      return [
+        '<span class="comment"># 1. Drop the downloaded .env into the repo</span>',
+        'mv ~/Downloads/.env ~/code/amazon-operator-stack/',
+        '',
+        '<span class="comment"># 2. Confirm everything works against your real seller account</span>',
+        'cd ~/code/amazon-operator-stack',
+        '<span class="accent">npm run smoke-test</span>',
+        '',
+        '<span class="comment"># 3. Wire the MCP server into Claude Code</span>',
+        '<span class="accent">npm run wire-claude</span>',
+        '',
+        '<span class="comment"># 4. Restart Claude Code, then start asking questions.</span>',
+      ].join('\n');
+    }
+
+    function sampleQueries() {
+      return [
+        '<span class="comment"># Yesterday’s revenue</span>',
+        '"Pull my Amazon orders from the last 24 hours and total the revenue."',
+        '',
+        '<span class="comment"># Top 5 SKUs by revenue this week</span>',
+        '"Pull the last 7 days of orders, group by SKU, sort by revenue."',
+        '',
+        '<span class="comment"># Reconcile against Seller Central</span>',
+        '"List financial events from yesterday, sum the shipment events, and tell me what to expect in my next payout."',
+      ].join('\n');
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  VALIDATORS
+    // ════════════════════════════════════════════════════════
+    function isValidClientId(v)     { return /^amzn1\..{20,}$/.test(v); }
+    function isValidClientSecret(v) { return v.length >= 20; }
+    function isValidRefreshToken(v) { return v.startsWith('Atzr|') && v.length >= 100; }
+    function maskTail(v, keep = 8)  {
+      if (!v) return '';
+      if (v.length <= keep + 4) return v;
+      return v.slice(0, 6) + '••••' + v.slice(-keep);
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  WIRE UP
+    // ════════════════════════════════════════════════════════
+    document.getElementById('restart-link').addEventListener('click', e => {
+      e.preventDefault();
+      if (confirm('Reset all answers and start over?')) resetState();
+    });
+
+    render();
+  </script>
+</body>
+</html>
