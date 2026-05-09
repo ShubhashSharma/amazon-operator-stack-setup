@@ -1057,7 +1057,7 @@
         'Download your .env, drop it into the cloned repo, and run the CLI commands below to wire it into Claude Code.'));
 
       card.appendChild(el('div', { class: 'download-card' },
-        el('div', { class: 'filename' }, '.env'),
+        el('div', { class: 'filename' }, 'amazon-operator-stack.env'),
         el('button', { class: 'btn primary', onclick: downloadEnv }, 'Download .env'),
       ));
 
@@ -1121,7 +1121,9 @@
     function downloadEnv() {
       const blob = new Blob([generateEnv()], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = el('a', { href: url, download: '.env' });
+      // Some browsers strip leading dots from download names. Using a safe name
+      // and instructing the user to rename it in the next-steps block.
+      const a = el('a', { href: url, download: 'amazon-operator-stack.env' });
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1130,8 +1132,8 @@
 
     function nextStepsCmd() {
       return [
-        '<span class="comment"># 1. Drop the downloaded .env into the repo</span>',
-        'mv ~/Downloads/.env ~/code/amazon-operator-stack/',
+        '<span class="comment"># 1. Drop the downloaded file into the repo, renaming it to .env</span>',
+        'mv ~/Downloads/amazon-operator-stack.env ~/code/amazon-operator-stack/.env',
         '',
         '<span class="comment"># 2. Confirm everything works against your real seller account</span>',
         'cd ~/code/amazon-operator-stack',
