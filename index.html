@@ -1409,13 +1409,35 @@
 
     function copyMegaCommand() {
       const text = megaCommandPlain(chosenOs);
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('copy-cmd-btn');
+      const btn = document.getElementById('copy-cmd-btn');
+      const flash = (label, ok = true) => {
         if (!btn) return;
-        btn.textContent = '✓ Copied';
-        btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-      });
+        btn.textContent = label;
+        btn.classList.toggle('copied', ok);
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2400);
+      };
+
+      // Best-effort: try clipboard API, fall back to selecting the <pre> so the user
+      // can manually copy with Cmd+C / Ctrl+C. We always do the selection so even
+      // if clipboard.writeText silently fails (incognito, focus issues, browser
+      // permission policies), the user still has a path forward.
+      const pre = document.getElementById('mega-cmd-pre');
+      if (pre) {
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      if (!navigator.clipboard?.writeText) {
+        flash('Selected — press ' + (chosenOs === 'win' ? 'Ctrl+C' : 'Cmd+C'), true);
+        return;
+      }
+
+      navigator.clipboard.writeText(text)
+        .then(() => flash('✓ Copied', true))
+        .catch(() => flash('Selected — press ' + (chosenOs === 'win' ? 'Ctrl+C' : 'Cmd+C'), true));
     }
 
     function megaCommand(os) {
