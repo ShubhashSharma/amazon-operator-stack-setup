@@ -870,15 +870,14 @@
       refreshToken: '',
     };
 
-    // ?dev=1 → prefill all fields with dummy values + jump to step 7.
-    // ?dev=4 → prefill + jump to step N (1..7) for testing a specific stage.
+    // ?dev or ?dev=1 → prefill all fields with dummy values + jump to step 7.
+    // ?dev&step=N → also prefill, but jump to a specific step (for testing one stage).
     {
       const params = new URLSearchParams(location.search);
-      const devVal = params.get('dev');
-      if (devVal !== null) {
+      if (params.has('dev')) {
         state = { ...DEV_DUMMY };
-        const target = parseInt(devVal, 10);
-        if (target >= 1 && target <= 7) state.step = target;
+        const stepParam = parseInt(params.get('step') ?? '', 10);
+        if (stepParam >= 1 && stepParam <= 7) state.step = stepParam;
         saveState();
       }
     }
